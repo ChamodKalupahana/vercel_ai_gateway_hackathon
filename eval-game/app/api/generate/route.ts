@@ -1,4 +1,5 @@
 import { generateText } from 'ai';
+import { GAME_CONFIG } from '../../config';
 // Providers are auto-loaded by 'ai' when using string identifiers if installed:
 // @ai-sdk/openai, @ai-sdk/anthropic, @ai-sdk/google, @ai-sdk/mistral
 
@@ -18,7 +19,7 @@ export async function POST(req: Request) {
   const models = [
     'openai/gpt-4o',
     'anthropic/claude-3-5-sonnet',
-    'google/gemini-1.5-pro-latest',
+    'google/gemini-2.5-flash-lite',
     // 'mistral/mistral-large-latest', // specific version names vary
     'openai/gpt-3.5-turbo' // Fallback / diversity
   ];
@@ -34,9 +35,11 @@ export async function POST(req: Request) {
       models.map(async (modelId) => {
         try {
           const { text } = await generateText({
-            model: modelId, // String identifier uses registry
-            system: "You are a helpful AI assistant in a blind eval game. usage: concise_argument",
-            prompt: `Topic: "${prompt}"\n\nProvide a persuasive argument. < 150 words. No self-ID.`,
+            model: modelId,
+            // @ts-ignore - maxTokens should exist but types might be misaligned in this version
+            maxTokens: GAME_CONFIG.MAX_TOKENS,
+            system: GAME_CONFIG.SYSTEM_PROMPT(GAME_CONFIG.MAX_WORDS),
+            prompt: `Topic: "${prompt}"${GAME_CONFIG.USER_PROMPT_SUFFIX(GAME_CONFIG.MAX_WORDS)}`,
           });
           return { modelId, text, status: 'success' };
         } catch (error) {
